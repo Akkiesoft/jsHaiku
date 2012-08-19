@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+	<meta charset="utf-8">
+	<title>jsHaiku</title>
+	<style type="text/css">
+<!--
+#keyword { width:300px; }
+#status  {
+	width :300px;
+	height:150px;
+}
+-->
+	</style>
+
+</head>
+
+<body>
+<h1>jsHaiku</h1>
+キーワード:<br>
+<input name="keyword" value="" id="keyword" placeholder="お題 (省略可能)"><br>
+本文:<br>
+<textarea name="status" id="status" placeholder="本文"></textarea><br>
+<input type="button" value="Haiku!" onClick="posttest(getElementById('keyword').value,getElementById('status').value)">
+
+<script type="text/javascript" src="jsOAuth-1.3.4.min.js"></script>
+<script type="text/javascript">
+    var oauth, options;
+
+    options = {
+        consumerKey: "",
+        consumerSecret: "",
+        requestTokenUrl: "https://www.hatena.com/oauth/initiate",
+        authorizationUrl: "https://www.hatena.ne.jp/oauth/authorize",
+        accessTokenUrl: "https://www.hatena.com/oauth/token"
+    };
+
+    oauth = OAuth(options);
+    oauth.fetchRequestToken(openAuthoriseWindow, failureHandler);
+    
+    function openAuthoriseWindow(url)
+        {
+            var wnd = window.open(url, 'authorise');
+            setTimeout(waitForPin, 100);
+
+            function waitForPin()
+            {
+                if (wnd.closed)
+                {
+                    var pin = prompt("Please enter your PIN", "");
+                    //ここでコケてる
+                    oauth.setVerifier(pin);
+                    oauth.fetchAccessToken(getSomeData, failureHandler);
+                }
+                else
+                {
+                    setTimeout(waitForPin, 100);
+                }
+            }
+        }
+        function getSomeData()
+        {
+            oauth.get("http://h.hatena.ne.jp/api/statuses/friends_timeline.json", function (data) {
+                console.log(data.text);
+            }, failureHandler);
+        }
+
+        function failureHandler(data)
+        {
+        alert("Uh");
+            console.error(data);
+        }
+</script>
+</body>
+</html>
