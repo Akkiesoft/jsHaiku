@@ -1,5 +1,7 @@
 <!--
 Based sample: https://gist.github.com/1071227
+
+Mac: /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --disable-web-security --allow-file-access-from-files --allow-file-access --user-data-dir=~/chrome-test/
 -->
 <!DOCTYPE html>
 <html lang="ja">
@@ -27,26 +29,42 @@ Based sample: https://gist.github.com/1071227
 <textarea name="status" id="status" placeholder="本文"></textarea><br>
 <input type="button" value="Haiku!" onClick="haiku(getElementById('keyword').value,getElementById('status').value)">
 
+<br><br><input type="button" onClick="localStorage.clear();" value="Clear Pin">
+
 <script type="text/javascript" src="jsOAuth-1.3.4.js"></script>
 <script type="text/javascript" src="config.js"></script>
 <script type="text/javascript">
+
 var oauth = OAuth(options);
 
-oauth.setAccessToken('', '');
-var url = oauth.authorizationUrl;
-oauth.request({
-	'url': oauth.requestTokenUrl,
-	'callbackUrl': "oob",
-	'data':{
-		'scope':'read_public,write_public'
-	},
-	'success': function (data) {
-		var token = oauth.parseTokenRequest(data, data.responseHeaders['Content-Type'] || undefined);
-		oauth.setAccessToken([token.oauth_token, token.oauth_token_secret]);
-		openAuthoriseWindow(url + '?' + data.text);
-	},
-	'failure': failureHandler
-});
+var pin = localStorage['pin'] || "";
+//var AccessToken = localStorage['token'] || "";
+//var AccessTokenSecret = localStorage['tokenSecret'] || "";
+console.log("pin = "+pin);
+//console.log("Token = "+AccessToken);
+//console.log("Secret = "+AccessTokenSecret);
+
+	oauth.setAccessToken('', '');
+	var url = oauth.authorizationUrl;
+	oauth.request({
+		'url': oauth.requestTokenUrl,
+		'callbackUrl': "oob",
+		'data':{
+			'scope':'read_public,write_public'
+		},
+		'success': function (data) {
+			var token = oauth.parseTokenRequest(data, data.responseHeaders['Content-Type'] || undefined);
+			oauth.setAccessToken([token.oauth_token, token.oauth_token_secret]);
+if (pin == "") {
+			openAuthoriseWindow(url + '?' + data.text);
+} else {
+			console.log(oauth.getVerifier());
+			oauth.setVerifier(pin);
+			oauth.fetchAccessToken(getSomeData, failureHandler);
+}
+		},
+		'failure': failureHandler
+	});
 
 function openAuthoriseWindow(url)
 {
@@ -56,9 +74,12 @@ function openAuthoriseWindow(url)
 	function waitForPin()
 	{
 		if (wnd.closed) {
-			var pin = prompt("Please enter your PIN", "");
+			pin = prompt("Please enter your PIN", "");
 			oauth.setVerifier(pin);
 			oauth.fetchAccessToken(getSomeData, failureHandler);
+			localStorage['pin'] = oauth.getVerifier();
+	//		localStorage['token'] = oauth.getAccessTokenKey();
+	//		localStorage['tokenSecret'] = oauth.getAccessTokenSecret();
 		} else {
 			setTimeout(waitForPin, 100);
 		}
