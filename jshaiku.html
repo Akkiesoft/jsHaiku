@@ -37,13 +37,13 @@ Mac: /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --disable-we
 
 var oauth = OAuth(options);
 
-var pin = localStorage['pin'] || "";
-//var AccessToken = localStorage['token'] || "";
-//var AccessTokenSecret = localStorage['tokenSecret'] || "";
-console.log("pin = "+pin);
-//console.log("Token = "+AccessToken);
-//console.log("Secret = "+AccessTokenSecret);
+var accessToken = localStorage['token'] || "";
+var accessTokenSecret = localStorage['tokenSecret'] || "";
 
+if (accessToken && accessTokenSecret) {
+	oauth.setAccessToken([accessToken, accessTokenSecret]);
+	getSomeData();
+} else {
 	oauth.setAccessToken('', '');
 	var url = oauth.authorizationUrl;
 	oauth.request({
@@ -55,31 +55,26 @@ console.log("pin = "+pin);
 		'success': function (data) {
 			var token = oauth.parseTokenRequest(data, data.responseHeaders['Content-Type'] || undefined);
 			oauth.setAccessToken([token.oauth_token, token.oauth_token_secret]);
-if (pin == "") {
 			openAuthoriseWindow(url + '?' + data.text);
-} else {
-			console.log(oauth.getVerifier());
-			oauth.setVerifier(pin);
-			oauth.fetchAccessToken(getSomeData, failureHandler);
-}
 		},
 		'failure': failureHandler
 	});
+}
 
 function openAuthoriseWindow(url)
 {
 	var wnd = window.open(url, 'authorise');
 	setTimeout(waitForPin, 100);
-
 	function waitForPin()
 	{
 		if (wnd.closed) {
 			pin = prompt("Please enter your PIN", "");
 			oauth.setVerifier(pin);
-			oauth.fetchAccessToken(getSomeData, failureHandler);
-			localStorage['pin'] = oauth.getVerifier();
-	//		localStorage['token'] = oauth.getAccessTokenKey();
-	//		localStorage['tokenSecret'] = oauth.getAccessTokenSecret();
+			oauth.fetchAccessToken(function() {
+				localStorage['token'] = oauth.getAccessTokenKey();
+				localStorage['tokenSecret'] = oauth.getAccessTokenSecret();
+				getSomeData();
+			}, failureHandler);
 		} else {
 			setTimeout(waitForPin, 100);
 		}
